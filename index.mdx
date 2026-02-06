@@ -1,97 +1,287 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: Introduction
+description: "AARM is an open system specification for securing AI-driven actions at runtime. Build systems that intercept, authorize, and audit autonomous actions before they execute."
 ---
 
-## Setting up
+## What is AARM?
 
-Get your documentation site up and running in minutes.
+**Autonomous Action Runtime Management (AARM)** is an open system specification for securing AI-driven actions at runtime. It defines what a runtime security system must do—not how to build it. An AARM system is built to intercept AI-driven actions before execution, accumulate session context including prior actions and data accessed, evaluate actions against organizational policy and contextual intent alignment, enforce authorization decisions (allow, deny, modify, or require approval), and record tamper-evident receipts binding action, context, decision, and outcome for forensic reconstruction.
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
+AARM is not a product, library, or service you install. It is a specification that describes the components, behaviors, and conformance requirements for systems that secure AI agents. You use AARM to **design and build** your own runtime security system, or to **evaluate** whether existing solutions meet the specification.
+
+<CardGroup cols={2}>
+  <Card title="Understand the Problem" icon="circle-exclamation" href="/problem">
+    Why existing security tools fail for AI-driven actions
+  </Card>
+  <Card title="Read the Definition" icon="book" href="/definition">
+    What AARM is (and is not)
+  </Card>
+</CardGroup>
+
+---
+
+## The Runtime Security Gap
+
+The security posture of AI systems is increasingly determined not by what models *say* but by what they *do*. Traditional security paradigms fail to address four characteristics of AI-driven actions:
+
+| Characteristic | Why It Matters |
+|----------------|----------------|
+| **Irreversibility** | Tool executions produce permanent effects. Once a database is dropped or data exfiltrated, the damage is done. |
+| **Speed** | Agents execute hundreds of actions per minute—far beyond human review capacity. |
+| **Compositional risk** | Individual actions may satisfy policy while their composition constitutes a breach. |
+| **Untrusted orchestration** | Prompt injection and indirect attacks mean the AI layer cannot be trusted as a security boundary. |
+
+Existing tools don't solve this:
+
+- **SIEM** observes events *after* execution—too late to prevent harm
+- **API gateways** verify *who* is calling, not *what* the action means
+- **Firewalls** protect perimeters—but agents operate *inside* with legitimate credentials
+- **Prompt guardrails** filter text, not actions—and are easily bypassed
+- **Human-in-the-loop** doesn't scale, and can itself be exploited
+
+---
+
+## Action Classification
+
+AARM recognizes that security decisions aren't binary. Actions fall into three categories:
+
+<CardGroup cols={3}>
+  <Card title="Forbidden" icon="ban">
+    Always blocked regardless of context. Hard policy limits defined by the organization.
+  </Card>
+  <Card title="Context-Dependent Deny" icon="shield-xmark">
+    Allowed by policy, but blocked when context reveals inconsistency with the user's stated intent.
+  </Card>
+  <Card title="Context-Dependent Allow" icon="shield-check">
+    Denied by default, but permitted when context confirms alignment with legitimate intent.
+  </Card>
+</CardGroup>
+
+| Category | Example | Evaluation |
+|----------|---------|------------|
+| **Forbidden** | `DROP DATABASE production`, send to known malicious domains | Static policy → **DENY** |
+| **Context-Dependent Deny** | Agent can send emails, but just read sensitive data and recipient is external | Policy ALLOW + context mismatch → **DENY** |
+| **Context-Dependent Allow** | Agent wants to delete records; context shows user explicitly requested cleanup of their own test data | Policy DENY + context match → **STEP-UP** or **ALLOW** |
+
+This is why AARM requires both static policy evaluation *and* context accumulation. An action that looks fine in isolation might be a breach in context. An action that looks dangerous might be exactly what the user asked for.
+
+---
+
+## What an AARM System Does
+
+A system conforming to AARM:
+
+<Steps>
+  <Step title="Intercepts">
+    Captures AI-driven actions before they reach target systems
+  </Step>
+  <Step title="Accumulates Context">
+    Tracks session state: the user's original request, prior actions, data accessed, and tool outputs
+  </Step>
+  <Step title="Evaluates">
+    Assesses the action against static policy *and* contextual alignment with stated intent
+  </Step>
+  <Step title="Enforces">
+    Implements authorization decisions: allow, deny, modify, or require human approval
+  </Step>
+  <Step title="Records">
+    Generates tamper-evident receipts capturing action, context, decision, and outcome
+  </Step>
+</Steps>
+```
+┌─────────────────┐         ┌─────────────────────────────────┐         ┌─────────────────┐
+│                 │         │          AARM SYSTEM            │         │                 │
+│  Agent / LLM    │ ──────► │  ┌─────────────────────────┐   │ ──────► │  Tools / APIs   │
+│                 │  action │  │    Context Accumulator  │   │  allow  │                 │
+│                 │         │  └────────────┬────────────┘   │   or    │                 │
+│                 │ ◄────── │               ▼                │ ◄────── │                 │
+│                 │  result │  ┌─────────────────────────┐   │  result │                 │
+└─────────────────┘         │  │     Policy Engine +     │   │         └─────────────────┘
+                            │  │   Intent Evaluation     │   │
+                            │  └────────────┬────────────┘   │
+                            │               ▼                │
+                            │  ┌─────────────────────────┐   │
+                            │  │   Receipts (+ context)  │   │
+                            │  └─────────────────────────┘   │
+                            └─────────────────────────────────┘
+```
+
+---
+
+## Building an AARM-Compliant System
+
+To build a system that conforms to AARM:
+
+<Steps>
+  <Step title="Understand the Threats">
+    Study the [threat model](/threats/overview) to understand what attacks your system must defend against: prompt injection, confused deputy, data exfiltration, intent drift.
+  </Step>
+  <Step title="Implement the Components">
+    Build the [core system components](/components/overview): action mediation, context accumulator, policy engine with intent evaluation, approval service, receipt generator, and telemetry exporter.
+  </Step>
+  <Step title="Choose an Architecture">
+    Select an [implementation architecture](/architectures/overview) based on your trust requirements: protocol gateway, SDK instrumentation, or kernel-level eBPF.
+  </Step>
+  <Step title="Verify Conformance">
+    Test your implementation against the [conformance requirements](/conformance/requirements) (R1–R9) using the [testing protocol](/conformance/testing).
+  </Step>
+</Steps>
+
+---
+
+## Specification Overview
+
+### Threat Model
+
+AARM addresses specific attack vectors unique to AI-driven actions:
+
+<CardGroup cols={3}>
+  <Card title="Prompt Injection" icon="syringe" href="/threats/prompt-injection">
+    Malicious instructions hijack agent behavior
+  </Card>
+  <Card title="Confused Deputy" icon="masks-theater" href="/threats/confused-deputy">
+    Agents misuse legitimate credentials under manipulation
+  </Card>
+  <Card title="Data Exfiltration" icon="file-export" href="/threats/data-exfiltration">
+    Compositional attacks extract sensitive data
+  </Card>
+</CardGroup>
+
+### System Components
+
+An AARM-compliant system implements these components:
+
+<CardGroup cols={2}>
+  <Card title="Action Mediation" icon="filter" href="/components/action-mediation">
+    Intercepts tool invocations and normalizes to canonical schema
+  </Card>
+  <Card title="Context Accumulator" icon="layer-group" href="/components/context-accumulator">
+    Tracks session state, prior actions, and data accessed
+  </Card>
+  <Card title="Policy Engine" icon="scale-balanced" href="/components/policy-engine">
+    Evaluates actions against static policy and contextual intent alignment
+  </Card>
+  <Card title="Approval Service" icon="user-check" href="/components/approval-service">
+    Human-in-the-loop for high-risk or ambiguous actions
+  </Card>
+  <Card title="Receipt Generator" icon="receipt" href="/components/receipts">
+    Signed records binding action, context, decision, and outcome
+  </Card>
+  <Card title="Telemetry Exporter" icon="chart-line" href="/components/telemetry">
+    Structured events for SIEM/SOAR integration
+  </Card>
+</CardGroup>
+
+<Card title="Components Overview" icon="sitemap" href="/components/overview">
+  Full component architecture with data flow diagrams
 </Card>
 
-## Make it yours
+### Implementation Architectures
 
-Design a docs site that looks great and empowers your users.
+AARM can be implemented through three architectures, each with distinct trust properties:
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+| Architecture | Enforcement Point | Bypass Resistance | Integration Effort |
+|--------------|-------------------|-------------------|-------------------|
+| [Protocol Gateway](/architectures/gateway) | Network | High | Low |
+| [SDK / Instrumentation](/architectures/sdk) | Application | Medium | Medium |
+| [Kernel / eBPF](/architectures/ebpf) | Kernel | Very High | High |
 
-## Create beautiful pages
+For defense in depth, organizations may deploy multiple architectures in layers.
 
-Everything you need to create world-class documentation.
+<Card title="Architecture Selection Guide" icon="compass" href="/architectures/overview">
+  When to choose each architecture based on your requirements
+</Card>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+### Conformance Requirements
 
-## Need inspiration?
+To claim AARM compliance, a system must satisfy these requirements:
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
+| ID | Level | Requirement |
+|----|-------|-------------|
+| R1 | MUST | Block actions before execution based on policy |
+| R2 | MUST | Validate parameters against type, range, and pattern constraints |
+| R3 | MUST | Accumulate session context including prior actions and data accessed |
+| R4 | MUST | Evaluate intent consistency for context-dependent actions |
+| R5 | MUST | Support human approval workflows with timeout handling |
+| R6 | MUST | Generate cryptographically signed receipts with full context |
+| R7 | MUST | Bind actions to human, service, agent, and session identity |
+| R8 | SHOULD | Enforce least privilege through scoped, just-in-time credentials |
+| R9 | SHOULD | Export structured telemetry to security platforms |
+
+<CardGroup cols={2}>
+  <Card title="Full Requirements" icon="clipboard-check" href="/conformance/requirements">
+    Detailed requirements with verification criteria
+  </Card>
+  <Card title="Testing Protocol" icon="flask-vial" href="/conformance/testing">
+    How to verify your implementation conforms
+  </Card>
+</CardGroup>
+
+---
+
+## Guides and Patterns
+
+Once you understand the specification, the Guides tab provides practical implementation help:
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/guides/quickstart">
+    Implement basic AARM patterns step by step
+  </Card>
+  <Card title="First Policy" icon="scale-balanced" href="/guides/first-policy">
+    Learn policy syntax by writing common rules
+  </Card>
+  <Card title="MCP Gateway Pattern" icon="server" href="/patterns/mcp-gateway">
+    Build a protocol-level proxy for MCP tools
+  </Card>
+  <Card title="Approval Flows" icon="user-check" href="/patterns/approval-flows">
+    Implement step-up authorization with Slack/email
+  </Card>
+</CardGroup>
+
+---
+
+## Why an Open Specification?
+
+The market for AI agent security is emerging rapidly, with multiple vendors building proprietary solutions. AARM aims to:
+
+<CardGroup cols={2}>
+  <Card title="Establish Baseline" icon="foundation">
+    Define requirements before fragmentation forecloses interoperability
+  </Card>
+  <Card title="Enable Evaluation" icon="clipboard-check">
+    Let buyers objectively assess vendor claims against defined criteria
+  </Card>
+  <Card title="Preserve Choice" icon="code-branch">
+    Specify what systems must do, not how they must be built
+  </Card>
+  <Card title="Accelerate Adoption" icon="rocket">
+    Provide implementation guidance, not just principles
+  </Card>
+</CardGroup>
+
+The goal is not to build AARM, but to define what an AARM-conformant system must do—enabling the market to compete on implementation quality rather than category definition.
+
+---
+
+## Research
+
+AARM is grounded in academic research on AI agent security:
+
+<CardGroup cols={2}>
+  <Card title="Technical Paper" icon="file-lines" href="/research/technical-paper">
+    Full specification paper with formal definitions
+  </Card>
+  <Card title="References" icon="book" href="/research/references">
+    Research literature on agent security, prompt injection, and runtime protection
+  </Card>
+</CardGroup>
+
+---
+
+## Contribute
+
+AARM is an **open specification**. We welcome contributions from security researchers, agent framework developers, and enterprise practitioners.
+
+<Card title="GitHub Repository" icon="github" href="https://github.com/aarm-spec/aarm">
+  Specification source, issues, and discussions
 </Card>
