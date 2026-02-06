@@ -1,0 +1,148 @@
+---
+title: What is AARM
+description: Formal definition of Autonomous Action Runtime Management and what it is (and is not).
+---
+
+## Definition
+
+**Autonomous Action Runtime Management (AARM)** is a runtime security system that:
+
+<Steps>
+  <Step title="Intercepts">
+    Captures AI-driven actions before they reach target systems
+  </Step>
+  <Step title="Evaluates">
+    Assesses actions against organizational policy using identity, parameters, and context
+  </Step>
+  <Step title="Enforces">
+    Implements authorization decisions: allow, deny, modify, or require human approval
+  </Step>
+  <Step title="Records">
+    Generates tamper-evident receipts binding action, decision, identity, and outcome
+  </Step>
+</Steps>
+
+---
+
+## Core Principle
+
+<Note>
+**The action boundary is the security boundary.**
+
+Not the model. Not the prompt. Not the orchestration layer. The moment an AI system attempts to execute a tool—that is where security must be enforced.
+</Note>
+
+---
+
+## What AARM Is
+
+| Property | Description |
+|----------|-------------|
+| **Inline enforcement** | Decisions made and enforced *before* execution, not after |
+| **Semantic evaluation** | Policies express meaning (what the action does), not just syntax |
+| **Compositional awareness** | Evaluates action sequences, not just individual calls |
+| **Forensic completeness** | Every action produces a signed, verifiable receipt |
+| **Agent agnostic** | Works with any agent framework, model, or orchestration layer |
+| **Fail-secure** | Denies actions when policy cannot be evaluated |
+
+---
+
+## What AARM Is Not
+
+<CardGroup cols={2}>
+  <Card title="Not a prompt filter" icon="xmark">
+    AARM operates on actions, not text. Prompt guardrails are complementary but insufficient.
+  </Card>
+  <Card title="Not an alignment technique" icon="xmark">
+    AARM does not attempt to make models safer. It constrains what they can *do*, regardless of intent.
+  </Card>
+  <Card title="Not an observability tool" icon="xmark">
+    AARM enforces policy, not just monitors. Logging without blocking is insufficient for irreversible actions.
+  </Card>
+  <Card title="Not an IAM replacement" icon="xmark">
+    AARM complements identity systems. It answers "should this action execute?" not "who is this?"
+  </Card>
+</CardGroup>
+
+---
+
+## Trust Model
+
+AARM's security model treats different components with different trust levels:
+
+| Component | Trust Level | Rationale |
+|-----------|-------------|-----------|
+| AARM system | Trusted | Must be trusted to enforce policy correctly |
+| Policy | Trusted | Defines organizational security requirements |
+| Agent / Model | **Untrusted** | May be compromised via prompt injection or manipulation |
+| User inputs | **Untrusted** | Primary vector for injection attacks |
+| Retrieved content | **Untrusted** | Documents, emails, web pages may contain malicious instructions |
+| Tool outputs | **Untrusted** | Responses may attempt to influence subsequent actions |
+| Tools / APIs | Partially trusted | Assumed to execute as documented, but effects must be verified |
+
+<Note>
+The critical insight: **the AI orchestration layer cannot be trusted as a security boundary.** Prompt injection is a fundamental property of current LLM architectures, not a bug to be fixed. Security must be enforced at a layer the model cannot influence.
+</Note>
+
+---
+
+## Scope
+
+### In Scope
+
+AARM addresses runtime authorization and audit for AI-driven actions:
+
+- Runtime action authorization (allow/deny/modify/step-up)
+- Parameter validation and constraint enforcement
+- Human approval workflows for high-risk actions
+- Cryptographically signed action receipts
+- Identity binding (human → service → agent → action)
+- Telemetry export for SIEM/SOAR integration
+
+### Out of Scope
+
+AARM does not address (but may complement):
+
+| Area | Why Out of Scope | Complementary Control |
+|------|------------------|----------------------|
+| Model training | AARM operates at runtime, not training time | RLHF, constitutional AI |
+| Prompt engineering | AARM secures actions, not text generation | System prompts, guardrails |
+| Agent internals | AARM treats agents as black boxes | Agent-specific safety measures |
+| Tool implementation | AARM mediates access, doesn't secure tools | Tool-level security controls |
+| Infrastructure security | AARM assumes secure deployment | Network security, container hardening |
+
+---
+
+## Relationship to Existing Security
+
+AARM fills a gap in the security stack—it does not replace existing controls:
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Existing Security Stack                       │
+├─────────────────────────────────────────────────────────────────┤
+│  Identity (IAM)        → Who is making the request?             │
+│  Network (Firewall)    → Can they reach this endpoint?          │
+│  Application (WAF)     → Is the request well-formed?            │
+│  Data (DLP)            → Is sensitive data leaving?             │
+│  Monitoring (SIEM)     → What happened? (after the fact)        │
+├─────────────────────────────────────────────────────────────────┤
+│                         ⚠️  GAP  ⚠️                              │
+│     Should THIS action, with THESE parameters, by THIS agent,   │
+│     in THIS context, be allowed to execute RIGHT NOW?           │
+├─────────────────────────────────────────────────────────────────┤
+│  AARM                  → Inline action authorization + audit    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Threat Model" icon="shield" href="/threats/overview">
+    Understand the attacks AARM defends against
+  </Card>
+  <Card title="System Components" icon="sitemap" href="/components/overview">
+    Learn the six components of an AARM system
+  </Card>
+</CardGroup>
