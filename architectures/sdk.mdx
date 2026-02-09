@@ -1,84 +1,88 @@
 ---
-title: SDK / Instrumentation
-description: AARM embedded within the agent runtime as middleware or hooks.
+title: "Architecture B: SDK / Instrumentation"
+sidebarTitle: SDK / Instrumentation
+description: "AARM embedded within the agent runtime for maximum context visibility."
 ---
 
-## Overview
+## Description
 
-The SDK architecture embeds AARM within the agent process:
+AARM is embedded within the agent runtime as an SDK, middleware layer, or instrumentation hook. Tool invocations pass through AARM code before reaching tool implementations. The SDK intercepts function calls, maintains context, evaluates policies (locally or via remote service), and emits receipts.
+
 ```
 ┌─────────────────────────────┐
-│       Agent Runtime         │
-├─────────────────────────────┤
-│  Agent Logic                │
-│       ↓                     │
-│  AARM Hook  ←→ Policy Svc   │
-│       ↓                     │
-│  Tool Calls                 │
+│        Agent Runtime        │
+│  ┌───────────────────────┐  │       ┌──────────────┐
+│  │     Agent Logic       │  │       │   Policy     │
+│  └──────────┬────────────┘  │       │   Service    │
+│             ▼               │       └──────┬───────┘
+│  ┌───────────────────────┐  │              │
+│  │     AARM Hook         │──┼──────────────┘
+│  └──────────┬────────────┘  │
+│             ▼               │       ┌──────────────┐
+│  ┌───────────────────────┐  │       │   Receipt    │
+│  │     Tool Calls        │  │       │   Store      │
+│  └───────────────────────┘  │       └──────────────┘
 └─────────────────────────────┘
 ```
 
+The key advantage is direct access to agent internals, enabling context accumulation that external observers cannot achieve.
+
 ---
 
-## Properties
+## Trust Properties
 
 | Property | Value |
 |----------|-------|
-| Enforcement point | Application |
-| Bypass resistance | Medium |
-| Semantic visibility | Very High |
-| Integration effort | Medium |
-| Context access | Full (agent state, history) |
+| **Enforcement point** | Application level — depends on correct integration |
+| **Bypass risk** | Higher than gateway — bugs or misconfiguration could bypass AARM |
+| **Context richness** | Maximum — direct access to original request, reasoning traces, memory |
+| **Semantic distance** | Full precision — access to original request and current action |
+| **Failure mode** | Configurable — fail closed recommended |
 
 ---
 
-## Implementation
-```python
-def aarm_protected(tool_name: str):
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(*args, **kwargs):
-            action = Action(
-                tool=tool_name,
-                operation=func.__name__,
-                parameters=kwargs,
-                identity=get_identity(),
-                context=get_agent_context()  # Full access
-            )
-            
-            decision = await policy_service.evaluate(action)
-            
-            if decision.result == "DENY":
-                emit_receipt(action, decision, None)
-                raise PolicyDenied(decision.reason)
-            
-            result = await func(*args, **kwargs)
-            emit_receipt(action, decision, result)
-            return result
-        return wrapper
-    return decorator
+## Context Accumulation Advantages
 
-@aarm_protected("email")
-async def send_email(to: str, subject: str, body: str):
-    ...
-```
+The SDK excels because it operates inside the agent runtime:
+
+- **Original request capture** — intercepts user's initial request without explicit passing
+- **Reasoning trace access** — includes chain-of-thought and tool selection rationale
+- **Memory access** — observes agent memory for poisoning or anomalous context
+- **Real-time drift detection** — detects intent drift before actions are attempted
+
+---
+
+## Action Classification Support
+
+| Classification | Support | Notes |
+|---------------|---------|-------|
+| Forbidden | ✅ Full | Static policy rules with immediate denial |
+| Context-Dependent Deny | ✅ Full | Rich context detects intent misalignment |
+| Context-Dependent Allow | ✅ Full | Access to original request verifies legitimate intent |
+| Context-Dependent Defer | ✅ Full | Can collect additional runtime data to resolve autonomously |
 
 ---
 
 ## Framework Integration
 
-| Framework | Integration Point |
+| Framework | Integration Pattern |
 |-----------|-------------------|
-| LangChain | Callback handlers |
-| OpenAI Agents | Middleware |
-| AutoGPT | Plugin wrappers |
-| Custom | Decorator pattern |
+| LangChain | Custom callback handlers (`on_tool_start`, `on_tool_end`) |
+| OpenAI Agents SDK | Middleware wrapping tool execution functions |
+| AutoGPT / CrewAI | Plugin architecture with custom tool wrappers |
+| Custom agents | Decorator pattern wrapping tool functions |
 
 ---
 
-## Limitations
+## When to Use
 
-- Requires code changes
-- Bypass risk if tools called directly
-- Coupled to framework versions
-- Must instrument all tool paths
+- You control the agent code and can modify it
+- Rich context is essential for policy decisions
+- Intent drift detection is a priority
+- Self-hosted agents with engineering capacity
+
+## When Not to Use
+
+- Agent code cannot be modified
+- Agent is a SaaS product you do not control
+- Framework evolves rapidly, creating version coupling
