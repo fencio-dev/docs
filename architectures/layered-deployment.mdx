@@ -1,0 +1,55 @@
+---
+title: Layered Deployment
+description: "Combining architectures for defense-in-depth coverage across all action classifications."
+---
+
+## Why Layer?
+
+No single architecture provides optimal coverage across all four [action classifications](/action-classification) and deployment scenarios. Layered deployment provides:
+
+- **Redundant enforcement** — multiple layers must be bypassed for undetected violation
+- **Complementary visibility** — Gateway/SDK/Vendor provide semantics; eBPF provides completeness
+- **Full classification coverage** — all four categories enforced appropriately across layers
+- **SaaS coverage** — Vendor Integration addresses the gap other architectures cannot fill
+
+---
+
+## Deployment Strategy
+
+1. **Primary enforcement:** Deploy the architecture matching your control level
+   - Self-hosted agents → [Gateway](/architectures/gateway) or [SDK](/architectures/sdk)
+   - SaaS agents → [Vendor Integration](/architectures/vendor-integration)
+
+2. **Context enrichment:** If Gateway is primary, add SDK instrumentation for tools requiring rich context or intent drift detection
+
+3. **Backstop monitoring:** Where you control the host, deploy [eBPF](/architectures/ebpf) for forbidden action enforcement and audit completeness
+
+4. **Tool-side enforcement:** For SaaS agents without vendor hooks, implement AARM at the tool boundary — you control the APIs the agent calls
+
+---
+
+## Example Scenarios
+
+### Enterprise with Self-Hosted Agents
+
+| Layer | Architecture | Role |
+|-------|-------------|------|
+| Primary | SDK | Full context access, intent drift detection, autonomous deferral resolution |
+| Secondary | Gateway | Protocol-based tools, consistent policy enforcement |
+| Backstop | eBPF | Forbidden action enforcement, audit completeness |
+
+### Enterprise Using SaaS Agents
+
+| Layer | Architecture | Role |
+|-------|-------------|------|
+| Primary | Vendor Integration | Synchronous governance hooks (if available) |
+| Secondary | Tool-side AARM | Policy enforcement on APIs you expose to the agent |
+| Complementary | Contractual | Require AARM-compliant hooks in vendor agreements |
+
+### Hybrid Environment
+
+| Layer | Architecture | Role |
+|-------|-------------|------|
+| Self-hosted | SDK + eBPF backstop | Full coverage for controlled agents |
+| SaaS | Vendor Integration | Coverage for third-party agents |
+| Unified | Single policy engine | Consistent policy across all agent types |
