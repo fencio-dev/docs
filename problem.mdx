@@ -25,7 +25,7 @@ When an AI agent executes `DROP TABLE customers`, no output filter helps. The da
 
 ## The Runtime Security Gap
 
-AI-driven actions have four characteristics that break traditional security:
+AI-driven actions have five characteristics that break traditional security:
 
 <AccordionGroup>
   <Accordion title="Irreversibility" icon="rotate-left">
@@ -43,9 +43,9 @@ AI-driven actions have four characteristics that break traditional security:
     
     | Actor | Actions per minute |
     |-------|-------------------|
-    | Human operator | 2-5 |
-    | AI agent | 100-500 |
-    | Human reviewer capacity | 5-10 |
+    | Human operator | 2–5 |
+    | AI agent | 100–500 |
+    | Human reviewer capacity | 5–10 |
     
     Security decisions must be **automated and instantaneous**.
   </Accordion>
@@ -63,7 +63,7 @@ AI-driven actions have four characteristics that break traditional security:
       → VIOLATION
 ```
     
-    Traditional security evaluates actions in isolation.
+    Traditional security evaluates actions in isolation. Context-aware evaluation catches what isolated checks miss.
   </Accordion>
 
   <Accordion title="Untrusted Orchestration" icon="skull">
@@ -75,6 +75,12 @@ AI-driven actions have four characteristics that break traditional security:
     - Deceived about what action it's actually taking
     
     **The AI layer must be treated as potentially compromised.**
+  </Accordion>
+
+  <Accordion title="Privilege Amplification" icon="arrow-up-right-dots">
+    Autonomous agents routinely operate under static, high-privilege identities misaligned with the principle of least privilege. A calendar integration granted full Google Workspace admin access. A database helper with `DROP` permissions.
+    
+    Small reasoning failures produce large-scale impact when the agent's execution identity is too powerful. A single prompt injection can exploit every permission the agent holds—not just the ones relevant to the current task.
   </Accordion>
 </AccordionGroup>
 
@@ -88,7 +94,7 @@ AI-driven actions have four characteristics that break traditional security:
     
     **Failure mode:** Observes *after* execution. By the time SIEM alerts, the database is dropped.
     
-    SIEM answers "what happened?" — but can't prevent it.
+    SIEM answers "what happened?"—but can't prevent it.
   </Card>
 
   <Card title="API Gateways" icon="door-open">
@@ -132,6 +138,14 @@ AI-driven actions have four characteristics that break traditional security:
   </Card>
 </CardGroup>
 
+### Automated vs. Autonomous Response
+
+These existing systems share a fundamental limitation: they support **automated response**—deterministic enforcement of pre-specified rules. A firewall blocks a port. An API gateway rejects an expired token. A SIEM triggers an alert when a pattern matches.
+
+What they do not support is **autonomous response**—reasoning over accumulated context to decide whether an action should be permitted, modified, delayed, or blocked. Determining whether "send email to external recipient" is safe requires knowing what data the agent accessed, what the user originally asked for, and whether the action aligns with that intent. No static rule captures this.
+
+**The gap** lies at the intersection of **prevention** and **context-awareness**: systems that can block actions before execution based on accumulated session context, not just static policy.
+
 ---
 
 ## The Missing Layer
@@ -150,7 +164,7 @@ There's a gap in the security stack:
 │                     ??? GAP ???                              │
 │                                                             │
 │  Where do you enforce policy on AI-initiated actions        │
-│  BEFORE they execute?                                       │
+│  BEFORE they execute, with context-aware evaluation?        │
 │                                                             │
 ├─────────────────────────────────────────────────────────────┤
 │                     TOOLS / APIS                            │
@@ -170,9 +184,11 @@ A security system that:
 |-------------|-----|
 | **Intercepts before execution** | Prevention, not just detection |
 | **Evaluates action semantics** | Understands *what* is happening, not just *who* |
-| **Enforces policy inline** | Allow, deny, modify, or escalate in real time |
-| **Handles composition** | Detects multi-action violations |
+| **Tracks accumulated context** | Detects multi-action violations and intent drift |
+| **Enforces policy inline** | Allow, deny, modify, defer, or escalate in real time |
+| **Handles uncertainty** | Defers actions when context is insufficient for a confident decision |
 | **Treats agent as untrusted** | Assumes orchestration may be compromised |
+| **Enforces least privilege** | Scopes credentials to the specific operation, not standing permissions |
 | **Creates forensic trail** | Tamper-evident record of every decision |
 | **Scales to agent speed** | Automated, millisecond decisions |
 
