@@ -47,6 +47,7 @@
               "architectures/vendor-integration",
               "architectures/layered-deployment"
             ]
+          },           
             {
             "group": "Threat Model",
             "pages": [
@@ -63,7 +64,7 @@
               "threats/side-channel-leakage",
               "threats/environmental-manipulation"
             ]
-          },
+
           },
           {
             "group": "Conformance",
