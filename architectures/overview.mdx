@@ -1,87 +1,76 @@
 ---
-title: Architectures Overview
-description: Three implementation approaches with different trust and integration properties.
+title: Implementation Architectures
+sidebarTitle: Overview
+description: "Four reference architectures for deploying AARM, based on what you control."
 ---
 
 ## Overview
 
-AARM can be implemented through three architectures:
+AARM is a specification, not an implementation. The choice of implementation architecture significantly affects security guarantees, deployment complexity, and operational characteristics.
 
-| Architecture | Enforcement Point | Bypass Resistance | Integration |
-|--------------|-------------------|-------------------|-------------|
-| **Gateway** | Network | High | Low |
-| **SDK** | Application | Medium | Medium |
-| **eBPF** | Kernel | Very High | None |
+The four architectures are defined by **what you control**:
 
----
+| Architecture | You Control | Enforcement Point | Bypass Resistance | Context Richness | Defer Support |
+|--------------|-------------|-------------------|-------------------|------------------|---------------|
+| [Protocol Gateway](/architectures/gateway) | Network | Network | High | Limited | Partial |
+| [SDK / Instrumentation](/architectures/sdk) | Code | Application | Medium | Full | Full |
+| [Kernel / eBPF](/architectures/ebpf) | Host | Kernel | Very High | None | Limited |
+| [Vendor Integration](/architectures/vendor-integration) | Policy only | Vendor runtime | Vendor-dependent | Vendor-dependent | Limited–Moderate |
 
-## Comparison
-```
-                    Bypass Resistance
-                           ▲
-                           │
-            eBPF ●─────────┼─────────────────
-                           │
-                           │
-         Gateway ●─────────┼─────────────────
-                           │
-             SDK ●─────────┼─────────────────
-                           │
-                           └──────────────────► Semantic Richness
-```
+<Warning>
+  **eBPF alone cannot satisfy AARM conformance** for context-dependent classifications. It must be deployed as a backstop alongside a semantic-aware architecture. See [Kernel / eBPF](/architectures/ebpf).
+</Warning>
 
 ---
 
-## Architecture Details
+## The Control Hierarchy
 
-<CardGroup cols={3}>
-  <Card title="Protocol Gateway" icon="server" href="/architectures/gateway">
-    MCP proxy with network-level enforcement
-  </Card>
-  <Card title="SDK / Instrumentation" icon="code" href="/architectures/sdk">
-    Embedded hooks with full context access
-  </Card>
-  <Card title="Kernel / eBPF" icon="microchip" href="/architectures/ebpf">
-    OS-level syscall interception
-  </Card>
-</CardGroup>
+Architecture selection depends on what you control:
+
+1. **Full control (self-hosted):** All architectures available. Choose based on capability requirements.
+2. **Code control (managed infrastructure):** Gateway and SDK available. eBPF may not be possible without host access.
+3. **Network control only:** Gateway is the primary option.
+4. **No control (SaaS):** Vendor Integration is the only option. If the vendor does not offer hooks, push for support using the specification as leverage.
 
 ---
 
-## Selection Guide
+## Selecting an Architecture
 
-<AccordionGroup>
-  <Accordion title="Choose Gateway when..." icon="server">
-    - MCP-based tool ecosystem
-    - Network-level enforcement acceptable
-    - Minimal agent changes required
-    - Mature network security practices
-  </Accordion>
-  
-  <Accordion title="Choose SDK when..." icon="code">
-    - Rich context needed for policies
-    - Non-MCP tools in use
-    - Strong engineering capacity
-    - Deep framework integration feasible
-  </Accordion>
-  
-  <Accordion title="Choose eBPF when..." icon="microchip">
-    - Maximum bypass resistance required
-    - Agent code cannot be modified
-    - Complete syscall visibility needed
-    - High-security environment
-  </Accordion>
-</AccordionGroup>
+- **Choose [Gateway](/architectures/gateway)** when you control the network, protocol adoption (e.g., MCP) is high, and minimal agent modification is required. Good balance of enforcement strength and integration simplicity.
+
+- **Choose [SDK](/architectures/sdk)** when you control the agent code, rich context is essential for intent alignment, and your team can maintain the integration. Best for sophisticated intent drift detection and autonomous deferral resolution.
+
+- **Choose [eBPF](/architectures/ebpf)** when you control the host, maximum bypass resistance is required, and forbidden action enforcement is the priority. **Must be paired** with a semantic-aware architecture for AARM conformance.
+
+- **Choose [Vendor Integration](/architectures/vendor-integration)** when the agent is a SaaS product you do not control and the vendor offers synchronous governance hooks. The only option for third-party agents.
+
+For defense-in-depth, combine architectures in a [layered deployment](/architectures/layered-deployment).
 
 ---
 
-## Layered Deployment
+## Action Classification Support
 
-For defense in depth, combine architectures:
+Not all architectures can enforce all four [action classifications](/action-classification) equally:
 
-1. **Primary**: Gateway for MCP tools
-2. **Secondary**: SDK for custom tools and rich context
-3. **Tertiary**: eBPF as detection backstop
+| Classification | Gateway | SDK | eBPF | Vendor |
+|---------------|---------|-----|------|--------|
+| Forbidden | ✅ Full | ✅ Full | ✅ Strong | ✅ Full |
+| Context-Dependent Deny | ✅ Good | ✅ Full | ⚠️ Weak | Depends on context |
+| Context-Dependent Allow | ⚠️ Partial | ✅ Full | ❌ Not feasible | Depends on context |
+| Context-Dependent Defer | ⚠️ Partial | ✅ Full | ⚠️ Limited | ⚠️ Limited–Moderate |
 
-No single architecture is optimal for all dimensions.
+---
 
+## All Architectures Must Implement
+
+Regardless of deployment pattern, every AARM architecture implements the same core components:
+
+- [Action Mediation](/components/action-mediation) — intercept before execution
+- [Context Accumulation](/components/context-accumulator) — track session state
+- [Policy Evaluation](/components/policy-engine) — static policy + intent alignment
+- [Approval Workflows](/components/approval-service) — STEP_UP decisions
+- [Deferral Workflows](/components/deferral-service) — DEFER decisions
+- [Receipt Generation](/components/receipts) — tamper-evident records
+- [Telemetry Export](/components/telemetry) — structured events
+
+The architectures differ in *where* these execute, *what visibility* they have, and *who controls* the enforcement point.
