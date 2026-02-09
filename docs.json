@@ -84,18 +84,6 @@
           }
         ]
       },
-      {
-        "tab": "Research",
-        "groups": [
-          {
-            "group": "Papers",
-            "pages": [
-              "research/technical-paper",
-              "research/references"
-            ]
-          }
-        ]
-      }
     ],
     "global": {
       "anchors": [
