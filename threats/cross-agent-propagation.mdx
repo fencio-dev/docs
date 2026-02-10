@@ -1,0 +1,20 @@
+---
+title: Cross-Agent Propagation
+description: "Compromised agents escalating or delegating through multi-agent workflows."
+---
+
+## Description
+
+In multi-agent architectures, a compromised or manipulated agent may delegate tasks to other agents, propagating malicious intent across trust boundaries. Agent A, subverted by prompt injection, invokes Agent B with instructions that appear legitimate within B's context but serve the attacker's goals. The receiving agent has no visibility into the compromise of the delegating agent.
+
+---
+
+## AARM Mitigation
+
+- **Cross-agent context tracking** preserves the chain of intent across agent boundaries, enabling downstream agents to evaluate actions against the original user request
+- **Transitive trust limits** constrain the scope of actions delegated agents can perform
+- **Blast-radius containment** policies prevent a single compromised agent from escalating privileges through delegation chains
+
+<Info>
+  Cross-agent propagation remains an active research direction. See [Research Directions](/research/open-challenges).
+</Info>
